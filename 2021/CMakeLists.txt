@@ -4,3 +4,4 @@ project(advent_of_code_2022)
 
 message("configuring advent of code 2021")
 add_subdirectory(day1)
+add_subdirectory(day2)
