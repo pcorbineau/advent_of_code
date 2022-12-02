@@ -36,7 +36,7 @@ constexpr auto to_direction(std::string_view dir)
     else throw std::runtime_error("invalid direction");
 }
 
-constexpr auto offset(const Direction &dir, const int distance)
+constexpr auto offset1(const Direction &dir, const int distance)
 {
     switch (dir) {
         case Direction::Forward: return std::make_tuple(distance, 0);
@@ -63,16 +63,15 @@ constexpr auto split(std::string_view line, const char delim) {
     return std::make_tuple(line.substr(0, pos), line.substr(pos + 1));
 }
 
-constexpr auto part1(std::span<const std::string_view> lines)
-{
-    auto string_to_tuple = [](auto&& line) {
+constexpr auto common(std::span<const std::string_view> lines, auto&& offset_to_tuple) {
+     auto string_to_tuple = [](auto&& line) {
         auto [dir, distance] = split(line, ' ');
         return std::make_tuple(to_direction(dir), stoi(distance));
     };
     
     auto views = lines 
       | std::views::transform(string_to_tuple)
-      | std::views::transform([](auto&& x) {return offset(std::get<0>(x), std::get<1>(x));});
+      | std::views::transform(offset_to_tuple);
 
     auto [x, y] = std::accumulate(views.begin(), views.end(), std::make_tuple(0, 0), [](auto&& acc, auto&& x) {
         return std::make_tuple(std::get<0>(acc) + std::get<0>(x), std::get<1>(acc) + std::get<1>(x));
@@ -80,27 +79,20 @@ constexpr auto part1(std::span<const std::string_view> lines)
     return x * y;
 }
 
+constexpr auto part1(std::span<const std::string_view> lines)
+{
+    auto offset_to_tuple = [](auto&& x) {return offset1(std::get<0>(x), std::get<1>(x));};
+    return common(lines, offset_to_tuple);
+}
+
 constexpr auto part2(std::span<const std::string_view> lines)
 {
-    auto string_to_tuple = [](auto&& line) {
-        auto [dir, distance] = split(line, ' ');
-        return std::make_tuple(to_direction(dir), stoi(distance));
-    };
-
-    auto my_lambda = [aim = 0] (auto&& x) mutable {
+    auto offset_to_tuple = [aim = 0] (auto&& x) mutable {
         auto [h, y, a] = offset2(std::get<0>(x), std::get<1>(x), aim);
         aim = a;
         return std::make_tuple(h, y);
     };
-
-    auto views = lines 
-      | std::views::transform(string_to_tuple)
-      | std::views::transform(my_lambda);
-
-    auto [x, y] = std::accumulate(views.begin(), views.end(), std::make_tuple(0, 0), [](auto&& acc, auto&& x) {
-        return std::make_tuple(std::get<0>(acc) + std::get<0>(x), std::get<1>(acc) + std::get<1>(x));
-    });
-    return x * y;
+    return common(lines, offset_to_tuple);
 }
 
 int main()
