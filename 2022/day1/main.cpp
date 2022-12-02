@@ -9,27 +9,33 @@
 #include "stoi.h"
 #include "data.h"
 
+constexpr auto elves_sum_calories(std::span<const std::string_view> lines)
+{
+    auto string_to_int = [](auto &&rng)  { return std::ranges::transform_view(rng, stoi); };
+    auto sum_calories  = [](auto &&view) { return std::accumulate(view.begin(), view.end(), 0); }; // sum calories
+
+    return lines
+      | std::views::split(std::string_view{}) // use empty line to split elves ingredients calories
+      | std::views::transform([&](auto &&rng) {return sum_calories(string_to_int(rng));}); // for each elf compute sum of calories
+}
+
 constexpr auto part1(std::span<const std::string_view> lines)
 {
-    return std::ranges::max(lines |
-                            std::views::split(std::string_view{}) |
-                            std::views::transform([](auto &&rng)
-                                                  {
-        auto view = rng | std::views::transform(stoi) | std::views::common;
-        return std::accumulate(view.begin(), view.end(), 0); }));
+    return std::ranges::max(elves_sum_calories(lines));
 }
 
 constexpr auto part2(std::span<const std::string_view> lines)
 {
-    auto accumulated_view = lines |
-                            std::views::split(std::string_view{}) |
-                            std::views::transform([](auto &&rng)
-                                                  {
-        auto view = rng | std::views::transform(stoi) | std::views::common;
-        return std::accumulate(view.begin(), view.end(), 0); });
-    std::vector<std::ranges::range_value_t<decltype(accumulated_view)>> accumulated(accumulated_view.begin(), accumulated_view.end());
+    auto elves_sum_calories_view = elves_sum_calories(lines);
+
+    // copy into vector to be able to use std::ranges::sort
+    std::vector<std::ranges::range_value_t<decltype(elves_sum_calories_view)>> accumulated(elves_sum_calories_view.begin(), elves_sum_calories_view.end());
     std::ranges::sort(accumulated, std::greater{});
+
+    // select the first 3 elements
     auto top3 = accumulated | std::views::take(3);
+
+    // return sum of the first 3 elements
     return std::accumulate(top3.begin(), top3.end(), 0);
 }
 
